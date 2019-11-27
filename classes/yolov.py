@@ -8,8 +8,8 @@ class Net:
         self.names = cocoNames
         self.net = self.__getNet()
         self.classes = self.__getClasses()
+        self.__layer_names = self.getLayerNames()
         self.__layers = self.output_layers()
-        self.layer_names = self.getLayerNames()
 
     def __getNet(self) -> object:
         return cv2.dnn.readNet(self.weights, self.config)
@@ -23,11 +23,11 @@ class Net:
         return self.net.getLayerNames()
 
     def output_layers(self):
-        output_layers = [self.layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
+        output_layers = [self.__layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
         return output_layers
 
     def set_input(self, blob):
-        x = self.net.setInput(blob)
+        self.net.setInput(blob)
 
     def get_outs(self, blob):
         self.net.setInput(blob)
