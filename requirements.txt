@@ -1,0 +1,6 @@
+imutils
+numpy
+youtube_dl
+pafy
+opencv-python
+pytest
