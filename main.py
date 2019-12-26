@@ -1,20 +1,24 @@
-import pafy as pafy
+from collections import Counter
+
 import cv2
 import imutils
 import numpy as np
-from classes.videoStream import VideoStream
+import pafy as pafy
+
+from classes.color import Color
 from classes.fps import FPS
 from classes.transform import Transform
+from classes.videoStream import VideoStream
 from classes.yolov import Net
 
 url = 'https://youtu.be/25EgbhdVESE'
 vlink = pafy.new(url)
 play = vlink.getbest()
 
-net = Net('weights/tiny.weights', 'cfg/tiny-yolov3.cfg', 'cfg/coco.names')
+net = Net('weights/test.weights', 'cfg/test.cfg', 'cfg/coco.names')
 vs = VideoStream(play.url).start()
 fps = FPS().start()
-colors = np.random.uniform(0, 255, size=(len(net.classes), 3))
+colors = Color(net.classes, True)
 
 while vs.more():
     frame = vs.read()
@@ -29,6 +33,7 @@ while vs.more():
     confidences = []
     boxes = []
     labels = []
+
     for out in outs:
         for detection in out:
             scores = detection[5:]
@@ -46,11 +51,10 @@ while vs.more():
                 y = int(center_y - h // 2)
 
                 boxes.append([x, y, w, h])
-                print(confidences)
                 confidences.append(float(confidence))
                 class_ids.append(class_id)
 
-    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.8, 0.01)
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.8, 0.3)
 
     labels = []
     for i in range(len(boxes)):
@@ -59,12 +63,19 @@ while vs.more():
             label = str(net.classes[class_ids[i]])
             labels.append(label)
             confidence = confidences[i]
-            color = colors[class_ids[i]]
+            color = colors.color_array[class_ids[i]]
+
+            # draw circle to check where the box starts
+            # cv2.circle(frame, (x, y), 12,(255, 0, 0), 2 )
+
             cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
-            cv2.putText(frame, label + " " + str(round(confidence, 2)), (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 1.5, color, 2)
+            cv2.putText(frame, label + " " + str(round(confidence, 2)), (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 1.5, color,
+                        2)
 
     # show queue size
-    cv2.putText(frame, str(vs.Q.qsize()), (10, 25), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), 1, cv2.LINE_4)
+    counter = dict(Counter(labels))
+    cv2.putText(frame, str(counter), (0, 0 + 30), cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 0, 0), 2)
+    # text = Text().draw(counter, frame, (0, 145, 255))
 
     # Show frame in window named Frame
     cv2.imshow("Frame", frame)
